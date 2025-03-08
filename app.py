@@ -20,7 +20,7 @@ if "memory" not in st.session_state:
 # Configure the LLM
 @st.cache_resource
 def load_llm():
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key="YOUR_GOOGLE_API_KEY")
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key="AIzaSyDPqddRi-U9PM2p2ZIPappjnwVtjNSZDoM")
     return llm
 
 # Configure the prompt template with data science focus and memory
