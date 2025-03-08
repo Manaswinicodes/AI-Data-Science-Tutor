@@ -1,7 +1,5 @@
 # AI-Data-Science-Tutor
 
-# Conversational Data Science Tutor
-
 A Streamlit application powered by Google's Gemini 1.5 Pro model that serves as a conversational data science tutor. The application is designed to help users understand data science concepts, techniques, methodologies, and tools through an interactive chat interface.
 
 ## Features
