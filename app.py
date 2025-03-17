@@ -1,6 +1,7 @@
 import os
 import streamlit as st
-from dotenv import load_dotenv
+import dotenv
+dotenv.load_dotenv()
 
 from langchain.memory import ConversationBufferMemory
 from langchain_google_genai import ChatGoogleGenerativeAI
