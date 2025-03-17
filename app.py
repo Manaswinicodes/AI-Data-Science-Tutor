@@ -439,4 +439,4 @@ st.markdown("""
         }
         
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #ff85a2, #f
+            background: linear-gradient(180deg, #ff85a2, #ffa6c
