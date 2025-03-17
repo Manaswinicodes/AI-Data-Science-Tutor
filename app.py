@@ -29,7 +29,7 @@ if "memory" not in st.session_state:
     st.session_state.memory = ConversationBufferMemory(return_messages=True)
 
 # UI Headers
-st.title("🧠 AI-Powered Data Science Tutor")
+st.title("🧠 AI Data Science Tutor")
 st.markdown("Welcome to your **AI Tutor**, designed to help you master data science concepts efficiently!")
 
 # Sidebar settings
