@@ -3,7 +3,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain.memory import ConversationBufferMemory
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema import SystemMessage
+from langchain.schema import SystemMessage, HumanMessage
 
 # Load environment variables
 load_dotenv()
@@ -45,20 +45,23 @@ user_input = st.text_input("🔍 Ask a Data Science question:", key="user_input"
 
 if user_input:
     try:
+        # Convert input to proper format
+        user_message = HumanMessage(content=user_input)
+        
         # Generate response
-        response = chat_model(user_input)
+        response = chat_model.invoke([system_message, user_message])  # Ensure the input is a list of messages
         
         # Store chat in session state
-        st.session_state.memory.save_context({"input": user_input}, {"output": response})
+        st.session_state.memory.save_context({"input": user_input}, {"output": response.content})
         
         # Display response
         st.subheader("📢 AI Response:")
-        st.write(response)
+        st.write(response.content)
         
         # Show chat history
         with st.expander("📜 Chat History"):
             for msg in st.session_state.memory.chat_memory.messages:
-                role = "🧑‍💻 You" if msg.type == "human" else "🤖 AI"
+                role = "🧑‍💻 You" if isinstance(msg, HumanMessage) else "🤖 AI"
                 st.markdown(f"**{role}:** {msg.content}")
 
     except Exception as e:
