@@ -17,7 +17,7 @@ if not api_key:
 # Set page config
 st.set_page_config(page_title="AI Data Science Tutor", page_icon="🧠", layout="wide")
 
-# Custom CSS for better UI
+# Custom CSS to style UI like ChatGPT
 st.markdown(
     """
     <style>
@@ -25,21 +25,54 @@ st.markdown(
         color: white;
         background-color: #0E1117;
     }
+    .stChatMessage {
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+        max-width: 80%;
+    }
+    .user-message {
+        background-color: #4CAF50;
+        color: white;
+        text-align: left;
+    }
+    .ai-message {
+        background-color: #1E1E1E;
+        color: white;
+        text-align: left;
+    }
     .stTextInput > div > div > input {
-        border: 2px solid #4CAF50; /* Green border */
+        border: 2px solid #4CAF50;
         border-radius: 5px;
         background-color: #1E1E1E;
         color: white;
         padding: 10px;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: #90EE90; /* Light green */
     }
     .stButton > button {
         background-color: #4CAF50;
         color: white;
         border-radius: 5px;
         padding: 10px;
+        width: 100%;
+    }
+    .chat-container {
+        display: flex;
+        flex-direction: column-reverse;
+        height: 500px;
+        overflow-y: auto;
+        border: 1px solid #4CAF50;
+        padding: 10px;
+        border-radius: 10px;
+        background-color: #222;
+    }
+    .fixed-input {
+        position: fixed;
+        bottom: 10px;
+        width: 90%;
+        left: 5%;
+        padding: 10px;
+        background-color: #0E1117;
+        border-radius: 10px;
     }
     </style>
     """,
@@ -66,11 +99,20 @@ if "memory" not in st.session_state:
 st.title("🧠 AI Data Science Tutor")
 st.markdown("Welcome to your **AI Tutor**, designed to help you master data science concepts efficiently!")
 
-# User input form
-with st.form("chat_form"):
-    user_input = st.text_input("🔍 Ask a Data Science question:", key="user_input")
-    submit = st.form_submit_button("Ask")
+# Chat History UI
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+for msg in reversed(st.session_state.memory.chat_memory.messages):
+    role = "user-message" if isinstance(msg, HumanMessage) else "ai-message"
+    st.markdown(f'<div class="stChatMessage {role}">{msg.content}</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
+# User Input Box at Bottom
+with st.container():
+    with st.form("chat_form"):
+        user_input = st.text_input("🔍 Type your message...", key="user_input")
+        submit = st.form_submit_button("Send")
+
+# Handle User Input
 if submit and user_input:
     try:
         system_message = SystemMessage(content=f"Provide responses at a {user_level} level.")
@@ -82,15 +124,8 @@ if submit and user_input:
         # Save chat history
         st.session_state.memory.save_context({"input": user_input}, {"output": response.content})
 
-        # Display response
-        st.subheader("📢 AI Response:")
-        st.write(response.content)
-
-        # Show chat history
-        with st.expander("📜 Chat History"):
-            for msg in st.session_state.memory.chat_memory.messages:
-                role = "🧑‍💻 You" if isinstance(msg, HumanMessage) else "🤖 AI"
-                st.markdown(f"**{role}:** {msg.content}")
+        # Refresh the page to show updated messages
+        st.rerun()
 
     except Exception as e:
         st.error(f"🚨 Error: {e}")
