@@ -1,5 +1,5 @@
-streamlit==1.32.0
-langchain==0.1.4
-langchain-core==0.1.12
-langchain-google-genai==0.0.5
-google-generativeai==0.3.2
+streamlit
+langchain
+langchain-google-genai
+google-generativeai
+python-dotenv
