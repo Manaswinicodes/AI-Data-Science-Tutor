@@ -1,0 +1,5 @@
+# Ignore envorionment variables (API key)
+.env
+
+# Ignore virtual environment
+.venv/
