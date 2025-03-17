@@ -1,40 +1,28 @@
-# AI-Data-Science-Tutor
+# 🧠 AI Data Science Tutor  
 
-A Streamlit application powered by Google's Gemini 1.5 Pro model that serves as a conversational data science tutor. The application is designed to help users understand data science concepts, techniques, methodologies, and tools through an interactive chat interface.
+An interactive **AI-powered Data Science tutor** built with **Streamlit**, **Google Gemini API**, and **LangChain**.  
+This tutor **adjusts explanations** based on the user’s learning level (**Beginner, Intermediate, Advanced**).  
 
-## Features
+## 🚀 Features  
+✅ **Ask Data Science questions** and get AI-generated answers  
+✅ **Adaptive learning** based on your expertise level  
+✅ **Memory-based chat** for continuous conversations  
+✅ **Sleek, dark-themed UI** with an intuitive chat layout  
+✅ **Real-time response generation** using `gemini-1.5-pro`  
 
-- **Conversational Memory**: The application maintains conversation context using LangChain's ConversationBufferMemory
-- **Data Science Focus**: Specialized in answering data science-related questions only
-- **Friendly UI**: Clean Streamlit interface for easy interaction
-- **Contextualized Responses**: Provides responses based on the entire conversation history
+## 🎨 UI Preview  
+![AI Data Science Tutor Screenshot](preview.png)  
 
-## Setup Instructions
+## 🛠 Tech Stack  
+- **Streamlit** – Interactive UI  
+- **Google Gemini API** – AI-powered responses  
+- **LangChain** – Memory-based conversational flow  
+- **Python** – Backend logic  
+- **dotenv** – Secure API key handling  
 
-1. Clone this repository
-2. Install the required packages:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Replace `"YOUR_GOOGLE_API_KEY"` in the code with your actual Google API key
-4. Run the application:
-   ```
-   streamlit run app.py
-   ```
+## 🔧 Installation  
 
-## Usage
-
-1. Type your data science-related questions in the chat input
-2. The AI tutor will respond with relevant explanations, examples, and code snippets when appropriate
-3. The conversation history is maintained throughout the session
-4. Use the "Clear Conversation" button in the sidebar to start a new conversation
-
-## Example Questions
-
-- "Can you explain what random forests are?"
-- "How do I handle missing data in pandas?"
-- "What's the difference between classification and regression?"
-- "Explain the concept of overfitting and how to prevent it"
-- "What Python libraries should I use for time series analysis?"
-
-The tutor will only respond to data science-related questions and will politely guide users back to data science topics if asked about unrelated subjects.
+### 1️⃣ Clone the Repository  
+```sh
+git clone https://github.com/Manaswinicodes/ai-data-science-tutor.git
+cd ai-data-science-tutor
