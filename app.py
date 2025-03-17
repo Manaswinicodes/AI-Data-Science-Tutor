@@ -1,30 +1,38 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
+import json
+import random
+import datetime
 
 from langchain.memory import ConversationBufferMemory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import SystemMessage, HumanMessage, AIMessage
+import requests
 
 # Streamlit UI
-st.set_page_config(page_title='AI Data Science Tutor', page_icon="🧠", layout='wide')
+st.set_page_config(page_title='Cute Data Science Tutor', page_icon="🎀", layout='wide')
 
-# Custom CSS with modern UI elements
+# Custom CSS with girly theme elements
 st.markdown("""
     <style>
+        /* Import Custom Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
+        
         /* Main App Background */
         .stApp {
-            background: linear-gradient(120deg, #f6f9fc, #eef2f7);
-            font-family: 'Inter', sans-serif;
+            background: linear-gradient(120deg, #fff0f5, #ffefd5, #e6e6fa);
+            font-family: 'Poppins', sans-serif;
         }
         
         /* Header Styling */
         .main-header {
-            background: linear-gradient(90deg, #3a1c71, #d76d77, #ffaf7b);
+            background: linear-gradient(90deg, #ff85a2, #ffa6c9, #ffb7ce);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
-            font-size: 2.5rem;
+            font-family: 'Dancing Script', cursive;
+            font-size: 3rem;
             font-weight: 800;
             text-align: center;
             margin-bottom: 0.5rem;
@@ -32,67 +40,77 @@ st.markdown("""
         }
         
         .sub-header {
-            color: #4a5568;
+            color: #db7093;
             text-align: center;
+            font-family: 'Poppins', sans-serif;
             font-size: 1.1rem;
             margin-bottom: 2rem;
         }
         
         /* Sidebar Customization */
         [data-testid="stSidebar"] {
-            background: #1e293b;
+            background: linear-gradient(180deg, #ffddf4, #ffe6f2);
             padding: 2rem 1.5rem;
-            border-radius: 0;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(219, 112, 147, 0.2);
         }
         
         /* Sidebar Titles */
         [data-testid="stSidebar"] h1 {
-            color: #fff;
+            color: #db7093;
+            font-family: 'Dancing Script', cursive;
             font-weight: 700;
-            font-size: 1.5rem;
+            font-size: 2rem;
             margin-bottom: 1.5rem;
-            border-bottom: 1px solid #475569;
+            border-bottom: 2px dashed #ffb7ce;
             padding-bottom: 0.75rem;
         }
         
         [data-testid="stSidebar"] h2, 
         [data-testid="stSidebar"] h3 {
-            color: #e2e8f0;
+            color: #db7093;
+            font-family: 'Poppins', sans-serif;
             font-weight: 600;
         }
 
         /* Sidebar Text */
         [data-testid="stSidebar"] p {
-            color: #cbd5e1;
+            color: #ff69b4;
+            font-family: 'Poppins', sans-serif;
             font-size: 0.95rem;
             line-height: 1.6;
         }
 
         /* Sidebar Bullet Points */
         [data-testid="stSidebar"] ul {
-            color: #cbd5e1;
+            color: #ff69b4;
             margin-left: 1rem;
         }
         
         [data-testid="stSidebar"] li {
             margin-bottom: 0.5rem;
         }
+        
+        [data-testid="stSidebar"] li::marker {
+            content: "🌸 ";
+        }
 
         /* Chat Container */
         .chat-container {
-            background: white;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
             padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(219, 112, 147, 0.15);
             margin-bottom: 1.5rem;
             max-height: 60vh;
             overflow-y: auto;
+            border: 2px solid #ffd1dc;
         }
         
         /* User Message */
         .user-message {
-            background: #075985;
-            color: white;
+            background: linear-gradient(90deg, #ffb7ce, #ffc1cc);
+            color: #8b008b;
             border-radius: 18px 18px 0 18px;
             padding: 0.75rem 1rem;
             margin: 1rem 0 1rem auto;
@@ -100,12 +118,14 @@ st.markdown("""
             position: relative;
             float: right;
             clear: both;
+            box-shadow: 0 3px 10px rgba(219, 112, 147, 0.2);
+            animation: fadeInRight 0.5s ease-out;
         }
         
         /* AI Message */
         .ai-message {
-            background: #f1f5f9;
-            color: #1e293b;
+            background: linear-gradient(90deg, #e6e6fa, #f0f8ff);
+            color: #8b008b;
             border-radius: 18px 18px 18px 0;
             padding: 0.75rem 1rem;
             margin: 1rem auto 1rem 0;
@@ -113,13 +133,38 @@ st.markdown("""
             position: relative;
             float: left;
             clear: both;
+            box-shadow: 0 3px 10px rgba(219, 112, 147, 0.2);
+            animation: fadeInLeft 0.5s ease-out;
+        }
+        
+        /* Animations for chat bubbles */
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         
         /* Code blocks in AI messages */
         .ai-message pre {
-            background: #1e293b;
-            color: #e2e8f0;
-            border-radius: 8px;
+            background: #36013f;
+            color: #ffd1dc;
+            border-radius: 12px;
             padding: 0.75rem;
             overflow-x: auto;
             margin: 0.75rem 0;
@@ -127,37 +172,46 @@ st.markdown("""
         
         /* Chat Input */
         .chat-input {
-            background: white;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
             padding: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(219, 112, 147, 0.15);
+            border: 2px solid #ffd1dc;
         }
         
         /* Buttons */
         .stButton > button {
-            background: linear-gradient(90deg, #3a1c71, #d76d77, #ffaf7b);
+            background: linear-gradient(90deg, #ff85a2, #ffa6c9, #ffb7ce);
             color: white;
-            border-radius: 12px;
+            border-radius: 20px;
             border: none;
             padding: 0.6rem 1.5rem;
             font-size: 0.95rem;
             font-weight: 600;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 10px rgba(219, 112, 147, 0.3);
             transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
         }
 
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 6px 12px rgba(219, 112, 147, 0.4);
+            background: linear-gradient(90deg, #ff6b99, #ff85a2, #ffa6c9);
+        }
+        
+        /* Button glow effect */
+        .stButton > button:hover {
+            box-shadow: 0 0 15px #ff85a2, 0 0 25px #ffa6c9;
         }
         
         /* Learning Level Selector */
         .level-selector {
-            background: white;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
             padding: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(219, 112, 147, 0.15);
             margin-bottom: 1.5rem;
+            border: 2px solid #ffd1dc;
         }
         
         /* Level Badges */
@@ -168,30 +222,185 @@ st.markdown("""
             font-size: 0.8rem;
             font-weight: 600;
             margin-right: 0.5rem;
+            font-family: 'Poppins', sans-serif;
         }
         
         .beginner-badge {
-            background-color: #22c55e;
+            background-color: #ff85a2;
             color: white;
         }
         
         .intermediate-badge {
-            background-color: #3b82f6;
+            background-color: #ffa6c9;
             color: white;
         }
         
         .advanced-badge {
-            background-color: #8b5cf6;
+            background-color: #ffb7ce;
             color: white;
         }
         
         /* Download Button */
         .download-button {
-            background: #1e293b !important;
-            border-radius: 8px !important;
+            background: linear-gradient(90deg, #c71585, #db7093) !important;
+            border-radius: 20px !important;
             padding: 0.5rem 1rem !important;
             font-size: 0.85rem !important;
             margin-top: 1rem !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+        
+        /* Progress Tracker */
+        .progress-container {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            padding: 1rem;
+            box-shadow: 0 4px 15px rgba(219, 112, 147, 0.15);
+            margin: 1.5rem 0;
+            border: 2px solid #ffd1dc;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff85a2, #ffa6c9, #ffb7ce);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-stars {
+            margin-top: 0.5rem;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        /* Emoji Reactions */
+        .emoji-reactions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+            gap: 0.5rem;
+        }
+        
+        .emoji-button {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            padding: 0.2rem;
+        }
+        
+        .emoji-button:hover {
+            transform: scale(1.3);
+        }
+        
+        /* Avatar Selection */
+        .avatar-selection {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .avatar-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .avatar-option.selected {
+            border-color: #ff85a2;
+            box-shadow: 0 0 10px #ffa6c9;
+        }
+        
+        /* Theme Background Selector */
+        .theme-selection {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .theme-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-option.selected {
+            border-color: #ff85a2;
+            box-shadow: 0 0 10px #ffa6c9;
+        }
+        
+        /* Quiz Container */
+        .quiz-container {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(219, 112, 147, 0.15);
+            margin: 1.5rem 0;
+            border: 2px solid #ffd1dc;
+        }
+        
+        .quiz-option {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid #ffd1dc;
+            border-radius: 10px;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-option:hover {
+            background: #ffd1dc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(219, 112, 147, 0.2);
+        }
+        
+        .quiz-option.correct {
+            background: rgba(144, 238, 144, 0.6);
+            border-color: green;
+        }
+        
+        .quiz-option.incorrect {
+            background: rgba(255, 182, 193, 0.6);
+            border-color: red;
+        }
+        
+        /* Weather Widget */
+        .weather-widget {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            padding: 0.75rem;
+            box-shadow: 0 4px 10px rgba(219, 112, 147, 0.15);
+            margin-bottom: 1rem;
+            border: 1px solid #ffd1dc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
         
         /* Clear Floats */
@@ -200,151 +409,34 @@ st.markdown("""
             clear: both;
             display: table;
         }
-    </style>
-""", unsafe_allow_html=True)
-
-# Load environment variables
-load_dotenv()
-api_key = os.getenv("GOOGLE_API_KEY")
-
-# Initialize the chat model
-chat_model = ChatGoogleGenerativeAI(model='gemini-1.5-pro', temperature=0.7, google_api_key=api_key)
-
-# Initialize memory
-if "memory" not in st.session_state:
-    st.session_state.memory = ConversationBufferMemory(return_messages=True)
-
-# Custom header
-st.markdown("<h1 class='main-header'>Data Science AI Tutor</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-header'>Your personal AI tutor for mastering data science concepts and techniques</p>", unsafe_allow_html=True)
-
-# Sidebar content
-st.sidebar.markdown("<h1>🧠 Learn With AI</h1>", unsafe_allow_html=True)
-st.sidebar.markdown("""
-<p>This AI-powered tutor helps you learn Data Science through interactive conversations. Get personalized explanations based on your knowledge level.</p>
-
-<h2>Features</h2>
-<ul>
-    <li>Ask any Data Science questions</li>
-    <li>Customize explanations to your level</li>
-    <li>Get code examples and practical tips</li>
-    <li>Export your learning session</li>
-    <li>Continuous learning with memory</li>
-</ul>
-
-<h2>Topics You Can Explore</h2>
-<ul>
-    <li>Statistics & Probability</li>
-    <li>Machine Learning Algorithms</li>
-    <li>Data Visualization</li>
-    <li>Feature Engineering</li>
-    <li>Model Evaluation</li>
-    <li>Python Libraries (Pandas, NumPy, Scikit-learn)</li>
-    <li>Deep Learning Basics</li>
-</ul>
-""", unsafe_allow_html=True)
-
-# Settings section
-st.sidebar.markdown("<h2>Settings</h2>", unsafe_allow_html=True)
-
-# Learning level selector with better styling
-user_level = st.sidebar.radio(
-    "Select your learning level:",
-    ["Beginner", "Intermediate", "Advanced"],
-    format_func=lambda x: f"{x} {'🔰' if x == 'Beginner' else '📚' if x == 'Intermediate' else '🚀'}"
-)
-
-# System message based on user level
-system_message = SystemMessage(
-    content=f"""You are an AI tutor specialized in answering only Data Science-related questions.
-    If the user asks anything outside Data Science, politely refuse to answer.
-    Provide responses based on the user's learning level: {user_level}.
-    
-    For Beginner level: Use simple explanations, avoid technical jargon, provide basic examples.
-    For Intermediate level: Include more technical details, assume some prior knowledge, provide more complex examples.
-    For Advanced level: Use advanced terminology, provide in-depth explanations, include cutting-edge techniques.
-    
-    Structure your responses with clear headings and use markdown formatting for better readability.
-    When providing code examples, use proper code blocks with syntax highlighting.
-    """
-)
-
-# Chat container
-st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-
-# Display chat history with improved styling
-for msg in st.session_state.memory.chat_memory.messages:
-    if isinstance(msg, HumanMessage):
-        st.markdown(f"<div class='user-message'>{msg.content}</div><div class='clearfix'></div>", unsafe_allow_html=True)
-    elif isinstance(msg, AIMessage):
-        st.markdown(f"<div class='ai-message'>{msg.content}</div><div class='clearfix'></div>", unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# User input with improved styling
-st.markdown("<div class='chat-input'>", unsafe_allow_html=True)
-user_query = st.chat_input("Ask me anything about Data Science...")
-st.markdown("</div>", unsafe_allow_html=True)
-
-# Level indicator
-level_color = "beginner-badge" if user_level == "Beginner" else "intermediate-badge" if user_level == "Intermediate" else "advanced-badge"
-st.markdown(f"<div style='text-align: right;'><span class='level-badge {level_color}'>{user_level} {('🔰' if user_level == 'Beginner' else '📚' if user_level == 'Intermediate' else '🚀')}</span></div>", unsafe_allow_html=True)
-
-# Process user input
-if user_query:
-    conversation_history = [system_message] + st.session_state.memory.chat_memory.messages + [HumanMessage(content=user_query)]
-
-    with st.spinner("Thinking..."):
-        ai_response = chat_model.invoke(conversation_history)
-
-    # Extract response for the selected level
-    def extract_response_for_level(full_response, level):
-        sections = {
-            "Beginner": "🔰 Beginner:",
-            "Intermediate": "📚 Intermediate:",
-            "Advanced": "🚀 Advanced:"
-        }
-
-        if sections[level] in full_response:
-            start_idx = full_response.find(sections[level])
-            next_section_idx = min(
-                [full_response.find(sec) for sec in sections.values() if full_response.find(sec) > start_idx and sec != sections[level]] + [len(full_response)]
-            )
-            return full_response[start_idx:next_section_idx].strip()
         
-        return full_response
-
-    filtered_response = extract_response_for_level(ai_response.content, user_level)
-
-    # Update memory
-    st.session_state.memory.chat_memory.add_user_message(user_query)
-    st.session_state.memory.chat_memory.add_ai_message(filtered_response)
-
-    # Display updated chat (this will be shown on the next rerun)
-    st.rerun()
-
-# Collect chat history for download
-chat_history = []
-for msg in st.session_state.memory.chat_memory.messages:
-    if isinstance(msg, HumanMessage):
-        chat_history.append(f"User: {msg.content}")
-    elif isinstance(msg, AIMessage):
-        chat_history.append(f"AI: {msg.content}")
-
-# Export and reset buttons
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    if chat_history:
-        chat_text = "\n\n".join(chat_history)
-        st.download_button(
-            "📥 Download Chat History", 
-            chat_text, 
-            file_name="data_science_learning_session.txt",
-            key="download-chat",
-        )
-
-with col2:
-    if st.button("🔄 Reset Chat"):
-        st.session_state.memory.clear()
-        st.rerun()
+        /* Stickers Panel */
+        .stickers-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        
+        .sticker-item {
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-align: center;
+        }
+        
+        .sticker-item:hover {
+            transform: scale(1.2);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #ff85a2, #f
