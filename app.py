@@ -30,62 +30,58 @@ st.markdown(
         margin: auto;
         padding: 20px;
     }
+    .chat-container {
+        background-color: #1E1E1E;
+        padding: 15px;
+        border-radius: 10px;
+        max-height: 60vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse; /* Ensures the latest message is always visible */
+    }
+    .user-message, .ai-message {
+        padding: 12px;
+        border-radius: 10px;
+        margin: 5px 0;
+        font-size: 16px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    .user-message {
+        background-color: #4CAF50;
+        color: white;
+        align-self: flex-end;
+    }
+    .ai-message {
+        background-color: #333;
+        color: white;
+        align-self: flex-start;
+    }
+    .input-container {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
     .stTextInput > div > div > input {
         border: 2px solid #4CAF50;
-        border-radius: 12px;
+        border-radius: 10px;
         background-color: #1E1E1E;
         color: white;
         padding: 12px;
         font-size: 16px;
         width: 100%;
     }
-    .stTextInput > div > div > input:focus {
-        border-color: #90EE90;
-    }
     .stButton > button {
         background-color: #4CAF50;
         color: white;
-        border-radius: 12px;
+        border-radius: 10px;
         padding: 10px 20px;
         font-size: 16px;
-        width: 100%;
         border: none;
         transition: 0.3s;
     }
     .stButton > button:hover {
         background-color: #388E3C;
-    }
-    .chat-container {
-        background-color: #1E1E1E;
-        padding: 15px;
-        border-radius: 10px;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-    .user-message {
-        text-align: right;
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px;
-        border-radius: 10px;
-        margin-bottom: 10px;
-    }
-    .ai-message {
-        text-align: left;
-        background-color: #333;
-        color: white;
-        padding: 10px;
-        border-radius: 10px;
-        margin-bottom: 10px;
-    }
-    .input-container {
-        position: fixed;
-        bottom: 20px;
-        width: 60%;
-        left: 20%;
-        right: 20%;
-        display: flex;
-        gap: 10px;
     }
     </style>
     """,
@@ -117,33 +113,4 @@ st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
 # Show chat history
 if st.session_state.memory.chat_memory.messages:
-    for msg in st.session_state.memory.chat_memory.messages:
-        role_class = "user-message" if isinstance(msg, HumanMessage) else "ai-message"
-        role_label = "🧑‍💻 You" if isinstance(msg, HumanMessage) else "🤖 AI"
-        st.markdown(f'<div class="{role_class}"><b>{role_label}:</b><br>{msg.content}</div>', unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Chat Input Container
-st.markdown('<div class="input-container">', unsafe_allow_html=True)
-user_input = st.text_input("Type your message...", key="user_input", label_visibility="collapsed")
-submit = st.button("Send")
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Handle input submission
-if submit and user_input:
-    try:
-        system_message = SystemMessage(content=f"Provide responses at a {user_level} level.")
-        user_message = HumanMessage(content=user_input)
-
-        # Generate response
-        response = chat_model.invoke([system_message, user_message])
-
-        # Save chat history
-        st.session_state.memory.save_context({"input": user_input}, {"output": response.content})
-
-        # Refresh the page to show new messages
-        st.experimental_rerun()
-
-    except Exception as e:
-        st.error(f"🚨 Error: {e}")
+    for msg in reversed(st.session_state.memory.chat_memory.messages):  # Reverse to show the latest message at the
