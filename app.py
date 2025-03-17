@@ -1,19 +1,23 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
-import json
-import random
-import datetime
 
 from langchain.memory import ConversationBufferMemory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import SystemMessage, HumanMessage, AIMessage
 import requests
+import random
+import json
 
 # Streamlit UI
 st.set_page_config(page_title='Cute Data Science Tutor', page_icon="🎀", layout='wide')
 
-# Custom CSS with girly theme elements
+# Load environment variables
+load_dotenv()
+api_key = os.getenv("GOOGLE_API_KEY")
+weather_api_key = os.getenv("OPENWEATHER_API_KEY")
+
+# Custom CSS with girly theme
 st.markdown("""
     <style>
         /* Import Custom Fonts */
@@ -195,23 +199,7 @@ st.markdown("""
 
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(219, 112, 147, 0.4);
-            background: linear-gradient(90deg, #ff6b99, #ff85a2, #ffa6c9);
-        }
-        
-        /* Button glow effect */
-        .stButton > button:hover {
-            box-shadow: 0 0 15px #ff85a2, 0 0 25px #ffa6c9;
-        }
-        
-        /* Learning Level Selector */
-        .level-selector {
-            background: rgba(255, 255, 255, 0.85);
-            border-radius: 20px;
-            padding: 1rem;
-            box-shadow: 0 4px 15px rgba(219, 112, 147, 0.15);
-            margin-bottom: 1.5rem;
-            border: 2px solid #ffd1dc;
+            box-shadow: 0 6px 12px rgba(219, 112, 147, 0.4), 0 0 15px #ff85a2, 0 0 25px #ffa6c9;
         }
         
         /* Level Badges */
@@ -238,16 +226,6 @@ st.markdown("""
         .advanced-badge {
             background-color: #ffb7ce;
             color: white;
-        }
-        
-        /* Download Button */
-        .download-button {
-            background: linear-gradient(90deg, #c71585, #db7093) !important;
-            border-radius: 20px !important;
-            padding: 0.5rem 1rem !important;
-            font-size: 0.85rem !important;
-            margin-top: 1rem !important;
-            font-family: 'Poppins', sans-serif !important;
         }
         
         /* Progress Tracker */
@@ -302,58 +280,6 @@ st.markdown("""
             transform: scale(1.3);
         }
         
-        /* Avatar Selection */
-        .avatar-selection {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-        
-        .avatar-option {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .avatar-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .avatar-option.selected {
-            border-color: #ff85a2;
-            box-shadow: 0 0 10px #ffa6c9;
-        }
-        
-        /* Theme Background Selector */
-        .theme-selection {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin: 1rem 0;
-        }
-        
-        .theme-option {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .theme-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .theme-option.selected {
-            border-color: #ff85a2;
-            box-shadow: 0 0 10px #ffa6c9;
-        }
-        
         /* Quiz Container */
         .quiz-container {
             background: rgba(255, 255, 255, 0.85);
@@ -380,37 +306,6 @@ st.markdown("""
             box-shadow: 0 4px 8px rgba(219, 112, 147, 0.2);
         }
         
-        .quiz-option.correct {
-            background: rgba(144, 238, 144, 0.6);
-            border-color: green;
-        }
-        
-        .quiz-option.incorrect {
-            background: rgba(255, 182, 193, 0.6);
-            border-color: red;
-        }
-        
-        /* Weather Widget */
-        .weather-widget {
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 15px;
-            padding: 0.75rem;
-            box-shadow: 0 4px 10px rgba(219, 112, 147, 0.15);
-            margin-bottom: 1rem;
-            border: 1px solid #ffd1dc;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        /* Clear Floats */
-        .clearfix::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
-        
-        /* Stickers Panel */
         .stickers-panel {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -427,16 +322,77 @@ st.markdown("""
         .sticker-item:hover {
             transform: scale(1.2);
         }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #ff85a2, #ffa6c
+    </style>
+""", unsafe_allow_html=True)
+
+# Initialize session states
+if "memory" not in st.session_state:
+    st.session_state.memory = ConversationBufferMemory(return_messages=True)
+if "progress" not in st.session_state:
+    st.session_state.progress = 0
+if "stars_earned" not in st.session_state:
+    st.session_state.stars_earned = 0
+if "reactions" not in st.session_state:
+    st.session_state.reactions = []
+if "quiz_active" not in st.session_state:
+    st.session_state.quiz_active = False
+if "quiz_question" not in st.session_state:
+    st.session_state.quiz_question = None
+if "sticker_panel_open" not in st.session_state:
+    st.session_state.sticker_panel_open = False
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "avatar" not in st.session_state:
+    st.session_state.avatar = "👩‍🔬"  # Default avatar
+if "selected_theme" not in st.session_state:
+    st.session_state.selected_theme = "Pink Dreams"
+
+# Initialize the chat model
+chat_model = ChatGoogleGenerativeAI(model='gemini-1.5-pro', temperature=0.7, google_api_key=api_key)
+
+# Display header
+st.markdown(f"<h1 class='main-header'>Cute Data Science Tutor</h1>", unsafe_allow_html=True)
+st.markdown(f"<p class='sub-header'>Your adorable AI companion for learning data science! ✨</p>", unsafe_allow_html=True)
+
+# Create two columns for the main layout
+col1, col2 = st.columns([3, 1])
+
+# Sidebar Configuration
+with st.sidebar:
+    st.markdown("<h1>Customize Your Experience</h1>", unsafe_allow_html=True)
+    
+    # Avatar selection
+    st.markdown("<h2>Choose Your Avatar</h2>", unsafe_allow_html=True)
+    avatar_options = ["👩‍🔬", "👨‍🔬", "🧚‍♀️", "🦄", "🌈", "🌸", "🐱", "🐶"]
+    avatar_cols = st.columns(4)
+    for i, avatar in enumerate(avatar_options):
+        col_index = i % 4
+        with avatar_cols[col_index]:
+            if st.button(avatar, key=f"avatar_{i}"):
+                st.session_state.avatar = avatar
+    
+    st.markdown(f"<p>Your current avatar: {st.session_state.avatar}</p>", unsafe_allow_html=True)
+    
+    # Theme selection
+    st.markdown("<h2>Choose Your Theme</h2>", unsafe_allow_html=True)
+    theme_options = ["Pink Dreams", "Lavender Mist", "Bubblegum Pop", "Pastel Paradise"]
+    selected_theme = st.selectbox("Select Theme", theme_options, index=theme_options.index(st.session_state.selected_theme))
+    if selected_theme != st.session_state.selected_theme:
+        st.session_state.selected_theme = selected_theme
+        st.experimental_rerun()
+    
+    # Difficulty level
+    st.markdown("<h2>Difficulty Level</h2>", unsafe_allow_html=True)
+    difficulty = st.select_slider(
+        "Select your learning level:",
+        options=["Beginner", "Intermediate", "Advanced"],
+        value="Beginner"
+    )
+    
+    # Display badge based on difficulty
+    if difficulty == "Beginner":
+        badge_color = "beginner-badge"
+    elif difficulty == "Intermediate":
+        badge_color = "intermediate-badge"
+    else:
+        badge_color = "advance
