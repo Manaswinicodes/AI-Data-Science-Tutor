@@ -393,6 +393,4 @@ with st.sidebar:
     if difficulty == "Beginner":
         badge_color = "beginner-badge"
     elif difficulty == "Intermediate":
-        badge_color = "intermediate-badge"
-    else:
-        badge_color = "advance
+        badge_color =
