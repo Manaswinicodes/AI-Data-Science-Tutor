@@ -12,6 +12,8 @@ This tutor **adjusts explanations** based on the user’s learning level (**Begi
 
 ## 🎨 UI Preview  
 ![AI Data Science Tutor Screenshot](preview.png)  
+![ds tutor](https://github.com/user-attachments/assets/97bc460b-5bb9-44b7-b7bf-4cbf01330328)
+
 
 ## 🛠 Tech Stack  
 - **Streamlit** – Interactive UI  
