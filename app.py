@@ -17,71 +17,45 @@ if not api_key:
 # Set page config
 st.set_page_config(page_title="AI Data Science Tutor", page_icon="🧠", layout="wide")
 
-# Custom CSS for sleek UI
+# Custom CSS for a sleek UI
 st.markdown(
     """
     <style>
     body {
-        color: white;
         background-color: #0E1117;
-    }
-    .stApp {
-        max-width: 800px;
-        margin: auto;
-        padding: 20px;
-    }
-    .chat-container {
-        background-color: #1E1E1E;
-        padding: 15px;
-        border-radius: 10px;
-        max-height: 60vh;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column-reverse; /* Ensures the latest message is always visible */
-    }
-    .user-message, .ai-message {
-        padding: 12px;
-        border-radius: 10px;
-        margin: 5px 0;
-        font-size: 16px;
-        max-width: 80%;
-        word-wrap: break-word;
-    }
-    .user-message {
-        background-color: #4CAF50;
         color: white;
-        align-self: flex-end;
-    }
-    .ai-message {
-        background-color: #333;
-        color: white;
-        align-self: flex-start;
-    }
-    .input-container {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
     }
     .stTextInput > div > div > input {
         border: 2px solid #4CAF50;
-        border-radius: 10px;
+        border-radius: 5px;
         background-color: #1E1E1E;
         color: white;
-        padding: 12px;
-        font-size: 16px;
-        width: 100%;
+        padding: 10px;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #90EE90;
     }
     .stButton > button {
         background-color: #4CAF50;
         color: white;
-        border-radius: 10px;
-        padding: 10px 20px;
-        font-size: 16px;
-        border: none;
+        border-radius: 5px;
+        padding: 10px;
         transition: 0.3s;
     }
     .stButton > button:hover {
-        background-color: #388E3C;
+        background-color: #45A049;
+    }
+    .chat-container {
+        background-color: #161B22;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .user-message {
+        color: #4CAF50;
+    }
+    .ai-message {
+        color: #90CAF9;
     }
     </style>
     """,
@@ -108,9 +82,36 @@ if "memory" not in st.session_state:
 st.title("🧠 AI Data Science Tutor")
 st.markdown("Welcome to your **AI Tutor**, designed to help you master data science concepts efficiently!")
 
-# Chat Display Container
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+# User input form
+with st.form("chat_form"):
+    user_input = st.text_input("🔍 Ask a Data Science question:", key="user_input")
+    submit = st.form_submit_button("Ask")
 
-# Show chat history
-if st.session_state.memory.chat_memory.messages:
-    for msg in reversed(st.session_state.memory.chat_memory.messages):  # Reverse to show the latest message at the
+if submit and user_input:
+    try:
+        system_message = SystemMessage(content=f"Provide responses at a {user_level} level.")
+        user_message = HumanMessage(content=user_input)
+
+        # Generate response
+        response = chat_model.invoke([system_message, user_message])
+
+        # Save chat history
+        st.session_state.memory.save_context({"input": user_input}, {"output": response.content})
+
+        # Display response
+        st.subheader("📢 AI Response:")
+        st.markdown(f'<div class="chat-container ai-message">{response.content}</div>', unsafe_allow_html=True)
+
+        # Show chat history
+        with st.expander("📜 Chat History", expanded=True):
+            if st.session_state.memory.chat_memory.messages:
+                for msg in reversed(st.session_state.memory.chat_memory.messages):
+                    role_class = "user-message" if isinstance(msg, HumanMessage) else "ai-message"
+                    role_label = "🧑‍💻 You" if isinstance(msg, HumanMessage) else "🤖 AI"
+                    st.markdown(
+                        f'<div class="chat-container {role_class}"><b>{role_label}:</b><br>{msg.content}</div>',
+                        unsafe_allow_html=True
+                    )
+
+    except Exception as e:
+        st.error(f"🚨 Error: {e}")
